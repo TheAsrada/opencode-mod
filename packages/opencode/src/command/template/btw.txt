@@ -1,0 +1,10 @@
+Answer this side question concisely, using ONLY the conversation context already available. You have no tools: do not read files, run commands, or search.
+
+---
+
+Input: $ARGUMENTS
+
+---
+
+If the input is empty, reply with exactly: "Usage: /btw <question> — ask a quick side question answered from conversation context only, without tools or history pollution."
+Otherwise, answer the question in the same language it was asked. Keep it short. If it cannot be answered without tools (file reads, code search, command execution, web access), say so in one sentence and suggest asking in the main session instead.
