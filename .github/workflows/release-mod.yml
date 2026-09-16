@@ -1,0 +1,144 @@
+name: release-mod
+run-name: "mod desktop release ${{ github.ref_name }}"
+
+# Modified OpenCode Desktop distribution.
+# - Triggers on tags like desktop-mod-v0.1.0 (independent mod versioning)
+#   or manually via workflow_dispatch.
+# - Builds unsigned installers with OPENCODE_CHANNEL=dev (separate app id
+#   ai.opencode.desktop.dev, no Apple/Azure signing, no notarization).
+# - Upstream publish.yml is guarded to anomalyco/opencode and never runs here.
+
+on:
+  push:
+    tags:
+      - "desktop-mod-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version override for manual runs (e.g. 0.1.0, without leading v)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: windows-2025
+            target: x86_64-pc-windows-msvc
+            platform_flag: --win
+          - host: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            platform_flag: --win --arm64
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            platform_flag: --mac --arm64
+            bun_install_flags: --os=darwin --cpu=arm64
+          - host: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            platform_flag: --linux
+          - host: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            platform_flag: --linux --arm64
+    runs-on: ${{ matrix.settings.host }}
+    env:
+      OPENCODE_CHANNEL: dev
+      RUST_TARGET: ${{ matrix.settings.target }}
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-bun
+        with:
+          install-flags: ${{ matrix.settings.bun_install_flags }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies (ubuntu only)
+        if: contains(matrix.settings.host, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm
+
+      - name: Resolve mod version
+        id: modver
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/desktop-mod-v* ]]; then
+            VER="${GITHUB_REF_NAME#desktop-mod-v}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            VER="${{ inputs.version }}"
+          else
+            VER="0.0.0-dev.${GITHUB_SHA::7}"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Mod version: $VER"
+
+      - name: Prepare
+        run: bun ./scripts/prepare.ts
+        working-directory: packages/desktop
+        env:
+          OPENCODE_VERSION: ${{ steps.modver.outputs.version }}
+
+      - name: Build
+        run: bun run build
+        working-directory: packages/desktop
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          OPENCODE_VERSION: ${{ steps.modver.outputs.version }}
+
+      - name: Package (unsigned)
+        run: npx electron-builder ${{ matrix.settings.platform_flag }} --publish never --config electron-builder.config.ts -c.mac.notarize=false -c.dmg.sign=false
+        working-directory: packages/desktop
+        timeout-minutes: 60
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-mod-desktop-${{ matrix.settings.target }}
+          path: packages/desktop/dist/*
+          if-no-files-found: error
+
+  release:
+    needs: build-desktop
+    if: startsWith(github.ref, 'refs/tags/desktop-mod-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: opencode-mod-desktop-*
+          merge-multiple: true
+          path: dist
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > /tmp/mod-notes.md <<'EOF'
+          # OpenCode Mod ${{ github.ref_name }}
+
+          Modified OpenCode Desktop distribution (unsigned, `dev` channel app id).
+
+          ## Mod features
+          - **Persistent window zoom** — desktop remembers webview zoom across restarts, menu/pinch/IPC actions stay in sync with the renderer.
+          - **`/btw` side-question command** (Claude Code parity) — ask a quick question answered from conversation context only, via a hidden no-tools subagent, without polluting main history. Dismissible overlay in TUI/Desktop.
+
+          ## Installers
+          - Windows x64: `*-win-x64.exe` (NSIS, unsigned — SmartScreen will warn, choose "Run anyway")
+          - Windows arm64: `*-win-arm64.exe`
+          - macOS arm64: `*.dmg` (unsigned — right-click → Open on first launch)
+          - Linux x64/arm64: `*.AppImage`, `*.deb`, `*.rpm`
+
+          Base: anomalyco/opencode dev branch (see README for exact base commit).
+          EOF
+          gh release create "${{ github.ref_name }}" --title "OpenCode Mod ${{ github.ref_name }}" --notes-file /tmp/mod-notes.md dist/*

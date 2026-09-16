@@ -8,6 +8,11 @@
   </a>
 </p>
 <p align="center">The open source AI coding agent.</p>
+
+> **OpenCode Mod** — modified distribution by [@TheAsrada](https://github.com/TheAsrada).
+> Base: upstream `anomalyco/opencode` dev @ `2e018f70f2`.
+> Mod features: **persistent desktop window zoom** · **`/btw` side-question command** (Claude Code parity: context-only answer, no tools, no history pollution).
+> Installers: see [Releases](https://github.com/TheAsrada/opencode-mod/releases) (tags `desktop-mod-v*`, unsigned, `dev`-channel app id).
 <p align="center">
   <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
