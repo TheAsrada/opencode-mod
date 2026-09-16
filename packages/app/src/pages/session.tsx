@@ -40,6 +40,8 @@ import { showToast } from "@/utils/toast"
 import { base64Encode, checksum } from "@opencode-ai/core/util/encode"
 import { useLocation, useNavigate, useParams, useSearchParams } from "@solidjs/router"
 import { NewSessionView, SessionHeader } from "@/components/session"
+import { BtwOverlay } from "@/components/btw-overlay"
+import { BtwProvider, useBtw } from "@/context/btw"
 import { ErrorPage } from "@/pages/error"
 import { CommentsProvider, useComments } from "@/context/comments"
 import { useCommand } from "@/context/command"
@@ -319,7 +321,9 @@ function SessionProviders(props: ParentProps) {
     <TerminalProvider>
       <FileProvider>
         <PromptProvider>
-          <CommentsProvider>{props.children}</CommentsProvider>
+          <CommentsProvider>
+            <BtwProvider>{props.children}</BtwProvider>
+          </CommentsProvider>
         </PromptProvider>
       </FileProvider>
     </TerminalProvider>
@@ -361,6 +365,7 @@ export default function Page() {
   const language = useLanguage()
   const sdk = useSDK()
   const serverSDK = useServerSDK()
+  const btw = useBtw()
   const settings = useSettings()
   const platform = usePlatform()
   const prompt = usePrompt()
@@ -1727,6 +1732,7 @@ export default function Page() {
         api: sdk().api.session,
         sync: sync(),
         serverSync: serverSync(),
+        btw,
         draft: item,
         optimisticBusy: item.sessionDirectory === sdk().directory,
       }).catch((err) => {
@@ -2386,6 +2392,7 @@ export default function Page() {
       <Show when={!newSessionDesign()}>
         <TerminalPanel />
       </Show>
+      <BtwOverlay />
     </SessionRouteFrame>
   )
 }

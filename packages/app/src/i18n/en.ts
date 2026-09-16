@@ -260,6 +260,12 @@ export const dict = {
   "prompt.mode.shell.exit": "esc to exit",
   "session.child.promptDisabled": "Subagent sessions cannot be prompted.",
   "session.child.backToParent": "Back to main session.",
+  "btw.title": "Side question",
+  "btw.working": "Thinking…",
+  "btw.dismiss": "Dismiss side answer",
+  "btw.dismissHint": "Space, Enter or Esc to dismiss. The main session keeps running.",
+  "btw.failed": "Could not get a side answer.",
+  "btw.usage": "Usage: /btw <question> — ask a quick side question answered from conversation context only, without tools or history pollution.",
 
   "prompt.example.1": "Fix a TODO in the codebase",
   "prompt.example.2": "What is the tech stack of this project?",

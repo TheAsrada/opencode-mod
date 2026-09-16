@@ -13,6 +13,7 @@ import { usePermission } from "@/context/permission"
 import { type ContextItem, type ImageAttachmentPart, type Prompt, type usePrompt } from "@/context/prompt"
 import { useSDK, type DirectorySDK } from "@/context/sdk"
 import { useSync, type DirectorySync } from "@/context/sync"
+import { useBtw } from "@/context/btw"
 import { Identifier } from "@/utils/id"
 import { Worktree as WorktreeState } from "@/utils/worktree"
 import { buildRequestParts } from "./build-request-parts"
@@ -45,6 +46,7 @@ type FollowupSendInput = {
   api: DirectorySDK["api"]["session"]
   serverSync: ServerSync
   sync: DirectorySync
+  btw: ReturnType<typeof useBtw>
   draft: FollowupDraft
   messageID?: string
   optimisticBusy?: boolean
@@ -77,6 +79,29 @@ export async function sendFollowupDraft(input: FollowupSendInput) {
   const [head, ...tail] = text.split(" ")
   const cmd = head?.startsWith("/") ? head.slice(1) : undefined
   if (cmd && input.sync.data.command.find((item) => item.name === cmd)) {
+    if (cmd === "btw") {
+      const question = tail.join(" ").trim()
+      if (!question) {
+        if (!input.btw.showLast()) input.btw.showUsage()
+        return true
+      }
+      input.btw.ask({
+        api: input.api,
+        sync: input.sync,
+        sessionID: input.draft.sessionID,
+        question,
+        agent: input.draft.agent,
+        model: input.draft.model,
+        variant: input.draft.variant,
+        files: await Promise.all(
+          images.map(async (attachment) => ({
+            uri: await blobDataUrl(attachment.blob, attachment.mime),
+            name: attachment.filename,
+          })),
+        ),
+      })
+      return true
+    }
     setBusy()
     try {
       if (!(await wait())) {
@@ -236,6 +261,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
   const sdk = useSDK()
   const sync = useSync()
   const serverSync = useServerSync()
+  const btw = useBtw()
   const local = useLocal()
   const permission = usePermission()
   const prompt = input.prompt
@@ -512,6 +538,30 @@ export function createPromptSubmit(input: PromptSubmitInput) {
     if (text.startsWith("/")) {
       const [cmdName, ...args] = text.split(" ")
       const commandName = cmdName.slice(1)
+      if (commandName === "btw") {
+        clearInput()
+        const question = args.join(" ").trim()
+        if (!question) {
+          if (!btw.showLast()) btw.showUsage()
+          return
+        }
+        btw.ask({
+          api: sdk().api.session,
+          sync: sync(),
+          sessionID: session.id,
+          question,
+          agent,
+          model,
+          variant,
+          files: await Promise.all(
+            images.map(async (attachment) => ({
+              uri: await blobDataUrl(attachment.blob, attachment.mime),
+              name: attachment.filename,
+            })),
+          ),
+        })
+        return
+      }
       const customCommand = sync().data.command.find((c) => c.name === commandName)
       if (customCommand) {
         clearInput()
@@ -620,6 +670,7 @@ export function createPromptSubmit(input: PromptSubmitInput) {
       api: sdk().api.session,
       sync: sync(),
       serverSync: serverSync(),
+      btw,
       draft,
       messageID,
       optimisticBusy: sessionDirectory === projectDirectory,

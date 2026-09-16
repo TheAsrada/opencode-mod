@@ -20,6 +20,7 @@ import { EmptyBorder, SplitBorder } from "../../ui/border"
 import { useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
 import { useClipboard } from "../../context/clipboard"
 import { Spinner } from "../spinner"
+import { askBtw } from "../btw"
 import { useSDK } from "../../context/sdk"
 import { useRoute } from "../../context/route"
 import { useProject } from "../../context/project"
@@ -1079,6 +1080,41 @@ export function Prompt(props: PromptProps) {
       const [command, ...firstLineArgs] = firstLine.split(" ")
       const restOfInput = firstLineEnd === -1 ? "" : inputText.slice(firstLineEnd + 1)
       const args = firstLineArgs.join(" ") + (restOfInput ? "\n" + restOfInput : "")
+
+      if (command.slice(1) === "btw") {
+        history.append({
+          ...store.prompt,
+          mode: currentMode,
+        })
+        input.extmarks.clear()
+        setStore("prompt", {
+          input: "",
+          parts: [],
+        })
+        setStore("extmarkToPartIndex", new Map())
+        props.onSubmit?.()
+        input.clear()
+        if (finishMoveProgress) move.finishSubmit()
+        askBtw(dialog, {
+          sessionID,
+          question: args,
+          agent: agent.name,
+          model: `${selectedModel.providerID}/${selectedModel.modelID}`,
+          variant,
+          parts: nonTextParts.filter((x) => x.type === "file"),
+          send: (req) =>
+            sdk.client.session.command({
+              sessionID: req.sessionID,
+              command: "btw",
+              arguments: req.question,
+              agent: req.agent,
+              model: req.model,
+              variant: req.variant,
+              parts: req.parts,
+            }),
+        })
+        return true
+      }
 
       void sdk.client.session.command({
         sessionID,

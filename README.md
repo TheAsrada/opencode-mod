@@ -11,7 +11,7 @@
 
 > **OpenCode Mod** — modified distribution by [@TheAsrada](https://github.com/TheAsrada).
 > Base: upstream `anomalyco/opencode` dev @ `2e018f70f2`.
-> Mod features: **persistent desktop window zoom** · **`/btw` side-question command** (Claude Code parity: context-only answer, no tools, no history pollution).
+> Mod features: **persistent desktop window zoom** · **`/btw` side-question command** (Claude Code parity: context-only answer via hidden no-tools subagent, dismissible `Space/Enter/Esc` overlay in TUI + Desktop/Web, main session keeps running).
 > Installers: see [Releases](https://github.com/TheAsrada/opencode-mod/releases) (tags `desktop-mod-v*`, unsigned, `dev`-channel app id).
 <p align="center">
   <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
