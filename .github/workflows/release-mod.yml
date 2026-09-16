@@ -94,7 +94,7 @@ jobs:
           OPENCODE_VERSION: ${{ steps.modver.outputs.version }}
 
       - name: Package (unsigned)
-        run: npx electron-builder ${{ matrix.settings.platform_flag }} --publish never --config electron-builder.config.ts -c '{"mac":{"notarize":false},"dmg":{"sign":false}}'
+        run: npx electron-builder ${{ matrix.settings.platform_flag }} --publish never --config electron-builder.config.mod.ts
         working-directory: packages/desktop
         timeout-minutes: 60
 
