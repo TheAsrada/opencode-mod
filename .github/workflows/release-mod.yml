@@ -18,12 +18,21 @@ on:
         description: "Version override for manual runs (e.g. 0.1.0, without leading v)"
         required: false
         type: string
+      attach_run_id:
+        description: "Attach already-built artifacts from this run id to attach_tag (skips builds)"
+        required: false
+        type: string
+      attach_tag:
+        description: "Existing release tag to attach artifacts to (e.g. desktop-mod-v0.1.4)"
+        required: false
+        type: string
 
 permissions:
   contents: write
 
 jobs:
   build-desktop:
+    if: ${{ inputs.attach_tag == '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -142,3 +151,22 @@ jobs:
           Base: anomalyco/opencode dev branch (see README for exact base commit).
           EOF
           gh release create "${{ github.ref_name }}" --title "OpenCode Mod ${{ github.ref_name }}" --notes-file /tmp/mod-notes.md dist/*
+
+  attach:
+    if: ${{ inputs.attach_tag != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download already-built artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download "${{ inputs.attach_run_id }}" --repo "${{ github.repository }}" --dir dist
+
+      - name: Upload installers to existing release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -rf dist/*/*-unpacked dist/*/mac-arm64
+          gh release upload "${{ inputs.attach_tag }}" --clobber dist/*/*
