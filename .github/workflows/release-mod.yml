@@ -31,9 +31,9 @@ jobs:
           - host: windows-2025
             target: x86_64-pc-windows-msvc
             platform_flag: --win
-          - host: windows-11-arm
-            target: aarch64-pc-windows-msvc
-            platform_flag: --win --arm64
+          # windows-11-arm dropped: bun install patch step flakes on that
+          # runner (ENOTEMPTY cache race) and upstream doesn't support ARM
+          # MSVC builds either. Revisit if GitHub runner stabilizes.
           - host: macos-latest
             target: aarch64-apple-darwin
             platform_flag: --mac --arm64
@@ -135,7 +135,6 @@ jobs:
 
           ## Installers
           - Windows x64: `*-win-x64.exe` (NSIS, unsigned — SmartScreen will warn, choose "Run anyway")
-          - Windows arm64: `*-win-arm64.exe`
           - macOS arm64: `*.dmg` (unsigned — right-click → Open on first launch)
           - Linux x64/arm64: `*.AppImage`, `*.deb`, `*.rpm`
 
