@@ -134,6 +134,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           rm -rf dist/*-unpacked dist/mac-arm64
+          rm -f dist/builder-debug.yml dist/builder-effective-config.yaml
           cat > /tmp/mod-notes.md <<'EOF'
           # OpenCode Mod ${{ github.ref_name }}
 
@@ -169,6 +170,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           rm -rf dist/*/*-unpacked dist/*/mac-arm64
+          rm -f dist/*/builder-debug.yml dist/*/builder-effective-config.yaml
           if gh release view "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
             gh release upload "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" --clobber dist/*/*
           else
