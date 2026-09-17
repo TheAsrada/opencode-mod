@@ -169,4 +169,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           rm -rf dist/*/*-unpacked dist/*/mac-arm64
-          gh release upload "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" --clobber dist/*/*
+          if gh release view "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" --clobber dist/*/*
+          else
+            gh release create "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" --title "OpenCode Mod ${{ inputs.attach_tag }}" --notes "Modified OpenCode Desktop distribution (unsigned, dev channel app id). See README for mod features and install notes." dist/*/*
+          fi
