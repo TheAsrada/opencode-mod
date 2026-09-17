@@ -169,4 +169,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           rm -rf dist/*/*-unpacked dist/*/mac-arm64
-          gh release upload "${{ inputs.attach_tag }}" --clobber dist/*/*
+          gh release upload "${{ inputs.attach_tag }}" --repo "${{ github.repository }}" --clobber dist/*/*
